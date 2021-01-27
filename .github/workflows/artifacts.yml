@@ -24,13 +24,13 @@ jobs:
     - name: Configure
       run: |
         mkdir build && cd build
-        cmake ../llvm                             \
-            -DCMAKE_BUILD_TYPE=Release            \
-            -DCMAKE_PARALLEL_LINK_JOBS=1          \
-            -DCMAKE_INSTALL_PREFIX=$PWD/install   \
-            -DLLVM_ENABLE_PROJECTS='clang'        \
-            -DLLVM_TARGETS_TO_BUILD=X86           \
-            -DLLVM_INCLUDE_TESTS=ON               \
+        cmake ../llvm                                       \
+            -DCMAKE_BUILD_TYPE=Release                      \
+            -DCMAKE_PARALLEL_LINK_JOBS=1                    \
+            -DCMAKE_INSTALL_PREFIX=$(cd ..; pwd)/install    \
+            -DLLVM_ENABLE_PROJECTS='clang'                  \
+            -DLLVM_TARGETS_TO_BUILD=X86                     \
+            -DLLVM_INCLUDE_TESTS=ON                         \
             -DLLVM_OPTIMIZED_TABLEGEN=ON
 
     - name: Build
@@ -55,7 +55,7 @@ jobs:
         name: OptSched Artifacts
         body: |
           For pre-built LLVM binaries / libraries / include files, configured for OptSched
-        files: llvm-release:./build/install
+        files: llvm-release:./install
         gzip: true
         allow_override: true
 
@@ -68,14 +68,14 @@ jobs:
     - name: Configure
       run: |
         mkdir build && cd build
-        cmake ../llvm                             \
-            -DCMAKE_BUILD_TYPE=Release            \
-            -DCMAKE_PARALLEL_LINK_JOBS=1          \
-            -DCMAKE_INSTALL_PREFIX=$PWD/install   \
-            -DLLVM_ENABLE_PROJECTS='clang'        \
-            -DLLVM_TARGETS_TO_BUILD=X86           \
-            -DLLVM_INCLUDE_TESTS=ON               \
-            -DLLVM_OPTIMIZED_TABLEGEN=ON          \
+        cmake ../llvm                                       \
+            -DCMAKE_BUILD_TYPE=Release                      \
+            -DCMAKE_PARALLEL_LINK_JOBS=1                    \
+            -DCMAKE_INSTALL_PREFIX=$(cd ..; pwd)/install    \
+            -DLLVM_ENABLE_PROJECTS='clang'                  \
+            -DLLVM_TARGETS_TO_BUILD=X86                     \
+            -DLLVM_INCLUDE_TESTS=ON                         \
+            -DLLVM_OPTIMIZED_TABLEGEN=ON                    \
             -DLLVM_ENABLE_ASSERTIONS=ON
 
     - name: Build
@@ -100,6 +100,6 @@ jobs:
         name: OptSched Artifacts
         body: |
           For pre-built LLVM binaries / libraries / include files, configured for OptSched
-        files: llvm-release-asserts:./build/install
+        files: llvm-release-asserts:./install
         gzip: true
         allow_override: true
