@@ -102,8 +102,8 @@ jobs:
 
     - name: Get ROCm
       run: |
-        ../bin/repo init -u https://github.com/RadeonOpenCompute/ROCm-OpenCL-Runtime.git -b roc-2.4.x -m opencl.xml
-        ../bin/repo sync
+        ./bin/repo init -u https://github.com/RadeonOpenCompute/ROCm-OpenCL-Runtime.git -b roc-2.4.x -m opencl.xml
+        ./bin/repo sync
 
     - name: Patch ROCm
       run: |
