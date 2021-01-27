@@ -116,6 +116,8 @@ jobs:
         mkdir build && cd build
         cmake ../opencl                                     \
             -DCMAKE_BUILD_TYPE=Release                      \
+            -DCMAKE_CXX_COMPILER=clang++-9                  \
+            -DCMAKE_C_COMPILER=clang-9                      \
             -DCMAKE_PARALLEL_LINK_JOBS=1                    \
             -DCMAKE_INSTALL_PREFIX=$(cd ..; pwd)/install    \
             -DLLVM_TARGETS_TO_BUILD="X86;AMDGPU"            \
