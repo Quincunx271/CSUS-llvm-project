@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: marvinpinto/action-automatic-releases@1369002
+    - uses: marvinpinto/action-automatic-releases@1369002240ebd4f758bbc69e9ae3649a5c3c2e14
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         automatic_release_tag: optsched-artifacts
