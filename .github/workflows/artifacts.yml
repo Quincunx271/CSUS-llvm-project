@@ -15,53 +15,18 @@ jobs:
         automatic_release_tag: optsched-artifacts
         prerelease: false
 
-  build-release:
+  build-llvm:
     runs-on: ubuntu-latest
     needs: update-release-tag
 
-    steps:
-    - uses: actions/checkout@v2
-    - name: Configure
-      run: |
-        mkdir build && cd build
-        cmake ../llvm                                       \
-            -DCMAKE_BUILD_TYPE=Release                      \
-            -DCMAKE_PARALLEL_LINK_JOBS=1                    \
-            -DCMAKE_INSTALL_PREFIX=$(cd ..; pwd)/install    \
-            -DLLVM_ENABLE_PROJECTS='clang'                  \
-            -DLLVM_TARGETS_TO_BUILD=X86                     \
-            -DLLVM_INCLUDE_TESTS=ON                         \
-            -DLLVM_OPTIMIZED_TABLEGEN=ON
-
-    - name: Build
-      working-directory: build
-      run: |
-        make -j4 || true
-        make -j4 || true
-        make -j4 || true
-        make -j4 || true
-        make
-
-    - name: Install
-      working-directory: build
-      run: |
-        make install
-
-    - uses: meeDamian/github-release@2.0
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        tag: optsched-artifacts
-        commitish: optsched
-        name: OptSched Artifacts
-        body: |
-          For pre-built LLVM binaries / libraries / include files, configured for OptSched
-        files: llvm-release:./install
-        gzip: true
-        allow_override: true
-
-  build-release-with-asserts:
-    runs-on: ubuntu-latest
-    needs: update-release-tag
+    strategy:
+      matrix:
+        asserts: [OFF, ON]
+        include:
+          - asserts: OFF
+            artifact: llvm-release
+          - asserts: ON
+            artifact: llvm-release-asserts
 
     steps:
     - uses: actions/checkout@v2
@@ -76,7 +41,7 @@ jobs:
             -DLLVM_TARGETS_TO_BUILD=X86                     \
             -DLLVM_INCLUDE_TESTS=ON                         \
             -DLLVM_OPTIMIZED_TABLEGEN=ON                    \
-            -DLLVM_ENABLE_ASSERTIONS=ON
+            -DLLVM_ENABLE_ASSERTIONS=${{ matrix.asserts }}
 
     - name: Build
       working-directory: build
@@ -100,6 +65,87 @@ jobs:
         name: OptSched Artifacts
         body: |
           For pre-built LLVM binaries / libraries / include files, configured for OptSched
-        files: llvm-release-asserts:./install
+        files: ${{ matrix.artifact }}:./install
+        gzip: true
+        allow_override: true
+
+  build-amdgpu-llvm:
+    runs-on: ubuntu-latest
+    needs: update-release-tag
+
+    strategy:
+      matrix:
+        asserts: [OFF, ON]
+        include:
+          - asserts: OFF
+            artifact: amdgpu-llvm-release
+          - asserts: ON
+            artifact: amdgpu-llvm-release-asserts
+
+    steps:
+    - name: Install dependencies
+      run: |
+        # Setup LLVM GPG Key
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+
+        sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
+        sudo apt-get update
+
+        # Install clang-tidy
+        sudo apt-get install clang++-9
+
+    - name: Set Up Repo Tool
+      run: |
+        mkdir -p $GITHUB_WORKSPACE/bin
+        curl https://storage.googleapis.com/git-repo-downloads/repo > $GITHUB_WORKSPACE/bin/repo
+        chmod a+x $GITHUB_WORKSPACE/bin/repo
+
+    - name: Get ROCm
+      run: |
+        ../bin/repo init -u https://github.com/RadeonOpenCompute/ROCm-OpenCL-Runtime.git -b roc-2.4.x -m opencl.xml
+        ../bin/repo sync
+
+    - name: Patch ROCm
+      run: |
+        sed -Ei '/local:/d' opencl/api/opencl/amdocl/amdocl.map
+        wget https://raw.githubusercontent.com/Quincunx271/llvm-project/${{ github.sha }}/.github/amdgpu-opencl.patch
+        cd opencl/compiler/driver && git apply $GITHUB_WORKSPACE/amdgpu-opencl.patch
+
+    - name: Configure
+      run: |
+        mkdir build && cd build
+        cmake ../opencl                                     \
+            -DCMAKE_BUILD_TYPE=Release                      \
+            -DCMAKE_PARALLEL_LINK_JOBS=1                    \
+            -DCMAKE_INSTALL_PREFIX=$(cd ..; pwd)/install    \
+            -DLLVM_TARGETS_TO_BUILD="X86;AMDGPU"            \
+            -DLLVM_BUILD_TOOLS=ON                           \
+            -DLLVM_INCLUDE_TESTS=ON                         \
+            -DCLANG_ENABLE_STATIC_ANALYZER=ON               \
+            -DLLVM_ENABLE_ASSERTIONS=${{ matrix.asserts }}
+
+    - name: Build
+      working-directory: build
+      run: |
+        make -j4 || true
+        make -j4 || true
+        make -j4 || true
+        make -j4 || true
+        make
+
+    - name: Install
+      working-directory: build
+      run: |
+        make install
+
+    - uses: meeDamian/github-release@2.0
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag: optsched-artifacts
+        commitish: optsched
+        name: OptSched Artifacts
+        body: |
+          For pre-built LLVM binaries / libraries / include files, configured for OptSched
+        files: ${{ matrix.artifact }}:./install
         gzip: true
         allow_override: true
