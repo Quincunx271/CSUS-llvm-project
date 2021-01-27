@@ -11,29 +11,20 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - id: release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: optsched-artifacts
-        release_name: OptSched Artifacts
-        body: |
-          For pre-built LLVM binaries, specifically for OptSched
-        commitish: optsched
-
     - run: |
         echo "Test123" >test.txt
 
-    - id: upload
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - uses: meeDamian/github-release@2.0
       with:
-        upload_url: ${{ steps.release.outputs.upload_url }}
-        asset_path: ./test.txt
-        asset_name: test.txt
-        asset_content_type: text/plain
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag: optsched-artifacts
+        commitish: optsched
+        name: OptSched Artifacts
+        body: |
+          For pre-built LLVM binaries / libraries / include files, configured for OptSched
+        files: ./test.txt
+        gzip: false
+        allow_override: true
 
   # build-release:
   #   runs-on: ubuntu-latest
