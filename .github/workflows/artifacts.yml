@@ -13,6 +13,7 @@ jobs:
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         automatic_release_tag: optsched-artifacts
+        prerelease: false
 
   build-release:
     runs-on: ubuntu-latest
