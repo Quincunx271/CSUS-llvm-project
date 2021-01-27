@@ -134,9 +134,10 @@ jobs:
         make
 
     - name: Install
-      working-directory: build
       run: |
-        make install
+        (cd build && make install)
+        cp -r opencl/compiler/llvm/lib/Target/AMDGPU/ install/include-private
+        cp build/compiler/llvm/lib/Target/AMDGPU/*.inc install/include-private/
 
     - uses: meeDamian/github-release@2.0
       with:
