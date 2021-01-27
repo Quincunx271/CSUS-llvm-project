@@ -87,12 +87,18 @@ jobs:
       run: |
         # Setup LLVM GPG Key
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        # Setup ROCm Key
+        wget -q -O - https://repo.radeon.com/rocm/rocm.gpg.key | sudo apt-key add -
+        echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/debian/ xenial main' | sudo tee /etc/apt/sources.list.d/rocm.list
 
         sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
         sudo apt-get update
 
         # Install clang-tidy
         sudo apt-get install clang++-9
+
+        # Install ROCm
+        sudo apt install rocm-dkms
 
     - name: Set Up Repo Tool
       run: |
