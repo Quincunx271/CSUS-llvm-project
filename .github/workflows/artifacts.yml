@@ -1,0 +1,97 @@
+name: Build Artifacts
+
+on:
+  push:
+    branches: [ optsched ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - id: release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: optsched-artifacts
+        release_name: OptSched Artifacts
+        body: |
+          For pre-built LLVM binaries, specifically for OptSched
+        commitish: optsched
+
+    - run: |
+        echo "Test123" >test.txt
+
+    - id: upload
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.release.outputs.upload_url }}
+        asset_path: ./test.txt
+        asset_name: test.txt
+        asset_content_type: text/plain
+
+  # build-release:
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #   - name: Configure
+  #     run: |
+  #       mkdir build && cd build
+  #       cmake ..                                  \
+  #           -DCMAKE_BUILD_TYPE=Release            \
+  #           -DCMAKE_PARALLEL_LINK_JOBS=1          \
+  #           -DCMAKE_INSTALL_PREFIX=$PWD/install   \
+  #           -DLLVM_ENABLE_PROJECTS='clang'        \
+  #           -DLLVM_TARGETS_TO_BUILD=X86           \
+  #           -DLLVM_INCLUDE_TESTS=ON               \
+  #           -DLLVM_OPTIMIZED_TABLEGEN=ON
+
+  #   - name: Build
+  #     working-directory: build
+  #     run: |
+  #       make -j4 || true
+  #       make -j4 || true
+  #       make -j4 || true
+  #       make -j4 || true
+  #       make
+
+  #   - name: Install
+  #     working-directory: build
+  #     run: |
+  #       make install
+
+  # build-release-with-asserts:
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #   - name: Configure
+  #     run: |
+  #       mkdir build && cd build
+  #       cmake ..                                  \
+  #           -DCMAKE_BUILD_TYPE=Release            \
+  #           -DCMAKE_PARALLEL_LINK_JOBS=1          \
+  #           -DCMAKE_INSTALL_PREFIX=$PWD/install   \
+  #           -DLLVM_ENABLE_PROJECTS='clang'        \
+  #           -DLLVM_TARGETS_TO_BUILD=X86           \
+  #           -DLLVM_INCLUDE_TESTS=ON               \
+  #           -DLLVM_OPTIMIZED_TABLEGEN=ON          \
+  #           -DLLVM_ENABLE_ASSERTIONS=ON
+
+  #   - name: Build
+  #     working-directory: build
+  #     run: |
+  #       make -j4 || true
+  #       make -j4 || true
+  #       make -j4 || true
+  #       make -j4 || true
+  #       make
+
+  #   - name: Install
+  #     working-directory: build
+  #     run: |
+  #       make install
