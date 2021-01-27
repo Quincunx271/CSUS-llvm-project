@@ -5,14 +5,36 @@ on:
     branches: [ optsched ]
 
 jobs:
-  build-test:
+  build-release:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
+    - name: Configure
+      run: |
+        mkdir build && cd build
+        cmake ..                                  \
+            -DCMAKE_BUILD_TYPE=Release            \
+            -DCMAKE_PARALLEL_LINK_JOBS=1          \
+            -DCMAKE_INSTALL_PREFIX=$PWD/install   \
+            -DLLVM_ENABLE_PROJECTS='clang'        \
+            -DLLVM_TARGETS_TO_BUILD=X86           \
+            -DLLVM_INCLUDE_TESTS=ON               \
+            -DLLVM_OPTIMIZED_TABLEGEN=ON
 
-    - run: |
-        echo "Test123" >test.txt
+    - name: Build
+      working-directory: build
+      run: |
+        make -j4 || true
+        make -j4 || true
+        make -j4 || true
+        make -j4 || true
+        make
+
+    - name: Install
+      working-directory: build
+      run: |
+        make install
 
     - uses: meeDamian/github-release@2.0
       with:
@@ -22,67 +44,50 @@ jobs:
         name: OptSched Artifacts
         body: |
           For pre-built LLVM binaries / libraries / include files, configured for OptSched
-        files: ./test.txt
-        gzip: false
+        files: llvm-release:./build/install
+        gzip: true
         allow_override: true
 
-  # build-release:
-  #   runs-on: ubuntu-latest
+  build-release-with-asserts:
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #   - name: Configure
-  #     run: |
-  #       mkdir build && cd build
-  #       cmake ..                                  \
-  #           -DCMAKE_BUILD_TYPE=Release            \
-  #           -DCMAKE_PARALLEL_LINK_JOBS=1          \
-  #           -DCMAKE_INSTALL_PREFIX=$PWD/install   \
-  #           -DLLVM_ENABLE_PROJECTS='clang'        \
-  #           -DLLVM_TARGETS_TO_BUILD=X86           \
-  #           -DLLVM_INCLUDE_TESTS=ON               \
-  #           -DLLVM_OPTIMIZED_TABLEGEN=ON
+    steps:
+    - uses: actions/checkout@v2
+    - name: Configure
+      run: |
+        mkdir build && cd build
+        cmake ..                                  \
+            -DCMAKE_BUILD_TYPE=Release            \
+            -DCMAKE_PARALLEL_LINK_JOBS=1          \
+            -DCMAKE_INSTALL_PREFIX=$PWD/install   \
+            -DLLVM_ENABLE_PROJECTS='clang'        \
+            -DLLVM_TARGETS_TO_BUILD=X86           \
+            -DLLVM_INCLUDE_TESTS=ON               \
+            -DLLVM_OPTIMIZED_TABLEGEN=ON          \
+            -DLLVM_ENABLE_ASSERTIONS=ON
 
-  #   - name: Build
-  #     working-directory: build
-  #     run: |
-  #       make -j4 || true
-  #       make -j4 || true
-  #       make -j4 || true
-  #       make -j4 || true
-  #       make
+    - name: Build
+      working-directory: build
+      run: |
+        make -j4 || true
+        make -j4 || true
+        make -j4 || true
+        make -j4 || true
+        make
 
-  #   - name: Install
-  #     working-directory: build
-  #     run: |
-  #       make install
+    - name: Install
+      working-directory: build
+      run: |
+        make install
 
-  # build-release-with-asserts:
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #   - name: Configure
-  #     run: |
-  #       mkdir build && cd build
-  #       cmake ..                                  \
-  #           -DCMAKE_BUILD_TYPE=Release            \
-  #           -DCMAKE_PARALLEL_LINK_JOBS=1          \
-  #           -DCMAKE_INSTALL_PREFIX=$PWD/install   \
-  #           -DLLVM_ENABLE_PROJECTS='clang'        \
-  #           -DLLVM_TARGETS_TO_BUILD=X86           \
-  #           -DLLVM_INCLUDE_TESTS=ON               \
-  #           -DLLVM_OPTIMIZED_TABLEGEN=ON          \
-  #           -DLLVM_ENABLE_ASSERTIONS=ON
-
-  #   - name: Build
-  #     working-directory: build
-  #     run: |
-  #       make -j4 || true
-  #       make -j4 || true
-  #       make -j4 || true
-  #       make -j4 || true
-  #       make
-
-  #   - name: Install
-  #     working-directory: build
-  #     run: |
-  #       make install
+    - uses: meeDamian/github-release@2.0
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag: optsched-artifacts
+        commitish: optsched
+        name: OptSched Artifacts
+        body: |
+          For pre-built LLVM binaries / libraries / include files, configured for OptSched
+        files: llvm-release-asserts:./build/install
+        gzip: true
+        allow_override: true
