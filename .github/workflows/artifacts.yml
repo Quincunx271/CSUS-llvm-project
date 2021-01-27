@@ -13,7 +13,7 @@ jobs:
     - name: Configure
       run: |
         mkdir build && cd build
-        cmake ..                                  \
+        cmake ../llvm                             \
             -DCMAKE_BUILD_TYPE=Release            \
             -DCMAKE_PARALLEL_LINK_JOBS=1          \
             -DCMAKE_INSTALL_PREFIX=$PWD/install   \
@@ -56,7 +56,7 @@ jobs:
     - name: Configure
       run: |
         mkdir build && cd build
-        cmake ..                                  \
+        cmake ../llvm                             \
             -DCMAKE_BUILD_TYPE=Release            \
             -DCMAKE_PARALLEL_LINK_JOBS=1          \
             -DCMAKE_INSTALL_PREFIX=$PWD/install   \
