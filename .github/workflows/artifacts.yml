@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - run: echo "::stop-commands::no-env-or-outputs"
     - uses: marvinpinto/action-automatic-releases@v1.1.0
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
