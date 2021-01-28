@@ -85,20 +85,24 @@ jobs:
     steps:
     - name: Install dependencies
       run: |
-        # Setup LLVM GPG Key
-        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
         # Setup ROCm Key
         wget -q -O - https://repo.radeon.com/rocm/rocm.gpg.key | sudo apt-key add -
         echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/debian/ xenial main' | sudo tee /etc/apt/sources.list.d/rocm.list
 
-        sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-10 main"
         sudo apt-get update
-
-        # Install clang
-        sudo apt-get install clang++-10 clang-10
 
         # Install ROCm
         sudo apt install rocm-dkms
+
+    - name: Build Clang
+      run: |
+        git clone https://github.com/llvm/llvm-project
+        cd llvm-project
+        mkdir build && cd build
+        cmake -DLLVM_ENABLE_PROJECTS='clang' -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=X86 \
+          -DLLVM_BUILD_TOOLS=ON -DLLVM_OPTIMIZED_TABLEGEN=ON ../llvm
+
+        make -j4
 
     - name: Set Up Repo Tool
       run: |
@@ -120,16 +124,15 @@ jobs:
     - name: Configure
       run: |
         mkdir build && cd build
-        cmake ../opencl                                     \
-            -DCMAKE_BUILD_TYPE=Release                      \
-            -DCMAKE_CXX_COMPILER=clang++-10                 \
-            -DCMAKE_C_COMPILER=clang-10                     \
-            -DCMAKE_PARALLEL_LINK_JOBS=1                    \
-            -DCMAKE_INSTALL_PREFIX=$(cd ..; pwd)/install    \
-            -DLLVM_TARGETS_TO_BUILD="X86;AMDGPU"            \
-            -DLLVM_BUILD_TOOLS=ON                           \
-            -DLLVM_INCLUDE_TESTS=ON                         \
-            -DCLANG_ENABLE_STATIC_ANALYZER=ON               \
+        cmake ../opencl                                                             \
+            -DCMAKE_BUILD_TYPE=Release                                              \
+            -DCMAKE_CXX_COMPILER=$GITHUB_WORKSPACE/llvm-project/build/bin/clang++   \
+            -DCMAKE_PARALLEL_LINK_JOBS=1                                            \
+            -DCMAKE_INSTALL_PREFIX=$(cd ..; pwd)/install                            \
+            -DLLVM_TARGETS_TO_BUILD="X86;AMDGPU"                                    \
+            -DLLVM_BUILD_TOOLS=ON                                                   \
+            -DLLVM_INCLUDE_TESTS=ON                                                 \
+            -DCLANG_ENABLE_STATIC_ANALYZER=ON                                       \
             -DLLVM_ENABLE_ASSERTIONS=${{ matrix.asserts }}
 
     - name: Build
