@@ -38,7 +38,7 @@ jobs:
             -DCMAKE_PARALLEL_LINK_JOBS=1                    \
             -DCMAKE_INSTALL_PREFIX=$(cd ..; pwd)/install    \
             -DLLVM_ENABLE_PROJECTS='clang'                  \
-            -DLLVM_TARGETS_TO_BUILD="X86;AMDGPU"            \
+            '-DLLVM_TARGETS_TO_BUILD=X86;AMDGPU'            \
             -DLLVM_INCLUDE_TESTS=ON                         \
             -DLLVM_OPTIMIZED_TABLEGEN=ON                    \
             -DLLVM_ENABLE_ASSERTIONS=${{ matrix.asserts }}
