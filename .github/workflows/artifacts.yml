@@ -6,7 +6,7 @@ on:
 
 jobs:
   update-release-tag:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
     - uses: marvinpinto/action-automatic-releases@1369002240ebd4f758bbc69e9ae3649a5c3c2e14
@@ -16,7 +16,7 @@ jobs:
         prerelease: false
 
   build-llvm:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: update-release-tag
 
     strategy:
@@ -70,7 +70,7 @@ jobs:
         allow_override: true
 
   build-amdgpu-llvm:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: update-release-tag
 
     strategy:
@@ -91,11 +91,11 @@ jobs:
         wget -q -O - https://repo.radeon.com/rocm/rocm.gpg.key | sudo apt-key add -
         echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/debian/ xenial main' | sudo tee /etc/apt/sources.list.d/rocm.list
 
-        sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
+        sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-11 main"
         sudo apt-get update
 
-        # Install clang-tidy
-        sudo apt-get install clang++-9
+        # Install clang
+        sudo apt-get install clang++-11 clang-11
 
         # Install ROCm
         sudo apt install rocm-dkms
@@ -122,8 +122,8 @@ jobs:
         mkdir build && cd build
         cmake ../opencl                                     \
             -DCMAKE_BUILD_TYPE=Release                      \
-            -DCMAKE_CXX_COMPILER=clang++-9                  \
-            -DCMAKE_C_COMPILER=clang-9                      \
+            -DCMAKE_CXX_COMPILER=clang++-11                 \
+            -DCMAKE_C_COMPILER=clang-11                     \
             -DCMAKE_PARALLEL_LINK_JOBS=1                    \
             -DCMAKE_INSTALL_PREFIX=$(cd ..; pwd)/install    \
             -DLLVM_TARGETS_TO_BUILD="X86;AMDGPU"            \
