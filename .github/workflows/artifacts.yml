@@ -93,7 +93,7 @@ jobs:
         commitish: optsched
         name: OptSched Artifacts
         body: |
-          For pre-built LLVM binaries / libraries / include files, configured for OptSched
+          For pre-built LLVM binaries/libraries/include files, configured for OptSched.
         files: ${{ matrix.artifact }}:./install
         gzip: true
         allow_override: true
