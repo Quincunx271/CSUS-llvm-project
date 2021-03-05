@@ -43,7 +43,7 @@ jobs:
         sudo apt-get install ccache
 
     - name: Set up ccache
-      uses: actions/cache@v1.1.0
+      uses: actions/cache@v2
       with:
         path: .ccache
         key: ccache
@@ -91,3 +91,95 @@ jobs:
         files: ${{ matrix.artifact }}:./install
         gzip: true
         allow_override: true
+
+  # build-amdgpu-llvm:
+  #   runs-on: ubuntu-20.04
+  #   needs: update-release-tag
+
+  #   strategy:
+  #     matrix:
+  #       asserts: [OFF, ON]
+  #       include:
+  #         - asserts: OFF
+  #           artifact: amdgpu-llvm-release
+  #         - asserts: ON
+  #           artifact: amdgpu-llvm-release-asserts
+
+  #   steps:
+  #   - uses: actions/checkout@v2
+
+  #   - name: Install dependencies
+  #     run: |
+  #       sudo apt-get install ninja-build
+  #       sudo apt-get install ccache
+
+  #       mkdir -p $GITHUB_WORKSPACE/bin
+
+  #       curl https://storage.googleapis.com/git-repo-downloads/repo > $GITHUB_WORKSPACE/bin/repo
+  #       chmod a+x $GITHUB_WORKSPACE/bin/repo
+
+  #   - name: Get ROCm
+  #     run: |
+  #       mkdir -p ROCm
+  #       cd ROCm
+  #       $GITHUB_WORKSPACE/bin/repo init -u https://github.com/RadeonOpenCompute/ROCm-OpenCL-Runtime.git -b roc-2.4.x -m opencl.xml
+  #       $GITHUB_WORKSPACE/bin/repo sync
+
+  #   - name: Patch ROCm
+  #     run: |
+  #       sed -Ei '/^\s*local:\s*$/d' opencl/api/opencl/amdocl/amdocl.map
+
+  #       wget https://github.com/kerbowa/ROCm-OpenCL-Driver/commit/84ad382227da24c727fc60c998c4f0c61a5afe0f.patch -O rocm.patch
+
+  #       cd opencl/compiler/driver
+  #       git apply $GITHUB_WORKSPACE/rocm.patch
+
+  #   - name: Set up ccache
+  #     uses: actions/cache@v2
+  #     with:
+  #       path: .ccache
+  #       key: ccache-amdgpu
+
+  #   - name: Configure
+  #     run: |
+  #       mkdir build && cd build
+  #       cmake opencl -GNinja                                \
+  #           -DCMAKE_BUILD_TYPE=Release                      \
+  #           -DCMAKE_PARALLEL_LINK_JOBS=1                    \
+  #           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache            \
+  #           -DCMAKE_C_COMPILER_LAUNCHER=ccache              \
+  #           -DCMAKE_INSTALL_PREFIX=$(cd ..; pwd)/install    \
+  #           -DLLVM_ENABLE_PROJECTS='clang'                  \
+  #           '-DLLVM_TARGETS_TO_BUILD=X86;AMDGPU'            \
+  #           -DLLVM_INCLUDE_TESTS=ON                         \
+  #           -DLLVM_OPTIMIZED_TABLEGEN=ON                    \
+  #           -DLLVM_ENABLE_ASSERTIONS=${{ matrix.asserts }}
+
+  #   - name: Build
+  #     working-directory: build
+  #     run: |
+  #       ninja || true
+  #       ninja || true
+  #       ninja || true
+  #       ninja || true
+  #       ninja
+
+  #   - name: Install
+  #     working-directory: build
+  #     run: |
+  #       ninja install
+
+  #   - name: Dump ccache Statistics
+  #     run: ccache -s
+
+  #   - uses: meeDamian/github-release@2.0
+  #     with:
+  #       token: ${{ secrets.GITHUB_TOKEN }}
+  #       tag: optsched-artifacts
+  #       commitish: optsched
+  #       name: OptSched Artifacts
+  #       body: |
+  #         For pre-built LLVM binaries / libraries / include files, configured for OptSched
+  #       files: ${{ matrix.artifact }}:./install
+  #       gzip: true
+  #       allow_override: true
