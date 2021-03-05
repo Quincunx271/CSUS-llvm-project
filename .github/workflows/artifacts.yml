@@ -37,6 +37,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Install dependencies
+      run: |
+        sudo apt-get install ninja-build
+        sudo apt-get install ccache
+
     - name: Set up ccache
       uses: actions/cache@v1.1.0
       with:
@@ -46,7 +51,7 @@ jobs:
     - name: Configure
       run: |
         mkdir build && cd build
-        cmake ../llvm                                       \
+        cmake ../llvm -GNinja                               \
             -DCMAKE_BUILD_TYPE=Release                      \
             -DCMAKE_PARALLEL_LINK_JOBS=1                    \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache            \
@@ -61,16 +66,16 @@ jobs:
     - name: Build
       working-directory: build
       run: |
-        make -j4 || true
-        make -j4 || true
-        make -j4 || true
-        make -j4 || true
-        make
+        ninja || true
+        ninja || true
+        ninja || true
+        ninja || true
+        ninja
 
     - name: Install
       working-directory: build
       run: |
-        make install
+        ninja install
 
     - name: Dump ccache Statistics
       run: ccache -s
