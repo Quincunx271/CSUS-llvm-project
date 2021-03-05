@@ -77,6 +77,12 @@ jobs:
       run: |
         ninja install
 
+    - name: Copy Private Headers
+      run: |
+        mkdir -p install/include/private
+        cp llvm/lib/Target/AMDGPU/*.h install/include/private
+        cp build/lib/Target/AMDGPU/*.inc install/include/private
+
     - name: Dump ccache Statistics
       run: ccache -s
 
