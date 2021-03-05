@@ -4,6 +4,12 @@ on:
   push:
     branches: [ optsched ]
 
+env:
+  CCACHE_BASEDIR: $GITHUB_WORKSPACE
+  CCACHE_DIR: $GITHUB_WORKSPACE/.ccache
+  CCACHE_COMPRESS: true
+  CCACHE_COMPRESSLEVEL: 6
+
 jobs:
   update-release-tag:
     runs-on: ubuntu-20.04
@@ -30,12 +36,21 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
+    - name: Set up ccache
+      uses: actions/cache@v1.1.0
+      with:
+        path: .ccache
+        key: ccache
+
     - name: Configure
       run: |
         mkdir build && cd build
         cmake ../llvm                                       \
             -DCMAKE_BUILD_TYPE=Release                      \
             -DCMAKE_PARALLEL_LINK_JOBS=1                    \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache            \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache              \
             -DCMAKE_INSTALL_PREFIX=$(cd ..; pwd)/install    \
             -DLLVM_ENABLE_PROJECTS='clang'                  \
             '-DLLVM_TARGETS_TO_BUILD=X86;AMDGPU'            \
@@ -56,6 +71,9 @@ jobs:
       working-directory: build
       run: |
         make install
+
+    - name: Dump ccache Statistics
+      run: ccache -s
 
     - uses: meeDamian/github-release@2.0
       with:
