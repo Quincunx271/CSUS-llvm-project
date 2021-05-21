@@ -85,17 +85,20 @@ jobs:
         cp llvm/lib/Target/AMDGPU/*.h install/include/private
         cp build/lib/Target/AMDGPU/*.inc install/include/private
 
+    - name: Build artifact
+      run: |
+        tar -czf ${{ matrix.artifact }}-${{ matrix.os }}.tar.gz install
+
     - name: Dump ccache Statistics
       run: ccache -s
 
-    - uses: meeDamian/github-release@2.0
+    - uses: ncipollo/release-action@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: optsched-artifacts
-        commitish: optsched
+        commit: optsched
         name: OptSched Artifacts
         body: |
           For pre-built LLVM binaries/libraries/include files, configured for OptSched.
-        files: ${{ matrix.artifact }}-${{ matrix.os }}:./install
-        gzip: true
-        allow_override: true
+        artifacts: ${{ matrix.artifact }}-${{ matrix.os }}.tar.gz
+        allowUpdates: true
