@@ -22,17 +22,19 @@ jobs:
         prerelease: false
 
   build-llvm:
-    runs-on: ubuntu-20.04
     needs: update-release-tag
 
     strategy:
       matrix:
+        os: [ubuntu-20.04, ubuntu-18.04]
         asserts: [OFF, ON]
         include:
           - asserts: OFF
             artifact: llvm-release
           - asserts: ON
             artifact: llvm-release-asserts
+
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v2
@@ -46,7 +48,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: .ccache
-        key: ccache-${{ matrix.artifact }}
+        key: ccache-${{ matrix.artifact }}-${{ matrix.os }}
 
     - name: Configure
       run: |
@@ -94,6 +96,6 @@ jobs:
         name: OptSched Artifacts
         body: |
           For pre-built LLVM binaries/libraries/include files, configured for OptSched.
-        files: ${{ matrix.artifact }}:./install
+        files: ${{ matrix.artifact }}-${{ matrix.os }}:./install
         gzip: true
         allow_override: true
