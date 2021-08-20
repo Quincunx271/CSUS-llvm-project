@@ -21,7 +21,89 @@ jobs:
         automatic_release_tag: optsched-7.x-artifacts
         prerelease: false
 
-  build-llvm:
+  build-normal-llvm:
+    needs: update-release-tag
+
+    strategy:
+      matrix:
+        llvm: [9, 10, 11, 12, 13]
+        os: [ubuntu-20.04]
+        artifact-tag: [stock-release-asserts]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        repository: llvm/llvm-project
+        ref: release/${{ matrix.llvm }}.x
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install ninja-build
+        sudo apt-get install ccache
+
+    - name: Set up ccache
+      uses: actions/cache@v2
+      with:
+        path: .ccache
+        key: ccache-${{ matrix.asserts }}-${{ matrix.artifact-tag }}-${{ matrix.os }}
+
+    - name: Configure
+      run: |
+        mkdir build && cd build
+        cmake ../llvm -GNinja                               \
+            -DCMAKE_BUILD_TYPE=Release                      \
+            -DCMAKE_PARALLEL_LINK_JOBS=1                    \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache            \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache              \
+            -DCMAKE_INSTALL_PREFIX=$(cd ..; pwd)/install    \
+            -DLLVM_ENABLE_PROJECTS='clang'                  \
+            '-DLLVM_TARGETS_TO_BUILD=X86;AMDGPU'            \
+            -DLLVM_INCLUDE_TESTS=ON                         \
+            -DLLVM_OPTIMIZED_TABLEGEN=ON                    \
+            -DLLVM_ENABLE_ASSERTIONS=${{ matrix.asserts }}
+
+    - name: Build
+      working-directory: build
+      run: |
+        ninja || true
+        ninja || true
+        ninja || true
+        ninja || true
+        ninja
+
+    - name: Install
+      working-directory: build
+      run: |
+        ninja install
+
+    - name: Copy Private Headers
+      run: |
+        mkdir -p install/include/private
+        cp llvm/lib/Target/AMDGPU/*.h install/include/private
+        cp build/lib/Target/AMDGPU/*.inc install/include/private
+
+    - name: Build artifact
+      run: |
+        tar -czf llvm-${{ matrix.llvm }}-${{ matrix.artifact-tag }}-${{ matrix.os }}.tar.gz install
+
+    - name: Dump ccache Statistics
+      run: ccache -s
+
+    - uses: ncipollo/release-action@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag: optsched-7.x-artifacts
+        commit: optsched-7.x
+        name: OptSched 7.x Artifacts
+        body: |
+          For pre-built LLVM binaries/libraries/include files, configured for OptSched.
+        artifacts: llvm-${{ matrix.llvm }}-${{ matrix.artifact-tag }}-${{ matrix.os }}.tar.gz
+        allowUpdates: true
+
+
+  build-adapted-llvm:
     needs: update-release-tag
 
     strategy:
@@ -30,9 +112,9 @@ jobs:
         asserts: [OFF, ON]
         include:
           - asserts: OFF
-            artifact: llvm-7.x-release
+            artifact: adapted-llvm-7.x-release
           - asserts: ON
-            artifact: llvm-7.x-release-asserts
+            artifact: adapted-llvm-7.x-release-asserts
 
     runs-on: ${{ matrix.os }}
 
@@ -99,6 +181,6 @@ jobs:
         commit: optsched-7.x
         name: OptSched 7.x Artifacts
         body: |
-          For pre-built LLVM b7.x inaries/libraries/include files, configured for OptSched.
+          For pre-built LLVM binaries/libraries/include files, configured for OptSched.
         artifacts: ${{ matrix.artifact }}-${{ matrix.os }}.tar.gz
         allowUpdates: true
