@@ -1,0 +1,196 @@
+name: Build LLVM Artifacts
+
+on:
+  push:
+    branches: [ github-workflows ]
+
+env:
+  CCACHE_BASEDIR: $GITHUB_WORKSPACE
+  CCACHE_DIR: $GITHUB_WORKSPACE/.ccache
+  CCACHE_COMPRESS: true
+  CCACHE_COMPRESSLEVEL: 6
+
+jobs:
+  update-release-tag:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: marvinpinto/action-automatic-releases@1369002240ebd4f758bbc69e9ae3649a5c3c2e14
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        automatic_release_tag: optsched-artifacts
+        prerelease: false
+
+  build-normal-llvm:
+    needs: update-release-tag
+
+    strategy:
+      matrix:
+        llvm: [9, 10, 11, 12, 13]
+        os: [ubuntu-20.04]
+        artifact-tag: [stock-release-asserts]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        repository: llvm/llvm-project
+        ref: release/${{ matrix.llvm }}.x
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install ninja-build
+        sudo apt-get install ccache
+
+    - name: Set up ccache
+      uses: actions/cache@v2
+      with:
+        path: .ccache
+        key: ccache-${{ matrix.asserts }}-${{ matrix.artifact-tag }}
+
+    - name: Configure
+      run: |
+        mkdir build && cd build
+        cmake ../llvm -GNinja                               \
+            -DCMAKE_BUILD_TYPE=Release                      \
+            -DCMAKE_PARALLEL_LINK_JOBS=1                    \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache            \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache              \
+            -DCMAKE_INSTALL_PREFIX=$(cd ..; pwd)/install    \
+            -DLLVM_ENABLE_PROJECTS='clang'                  \
+            '-DLLVM_TARGETS_TO_BUILD=X86;AMDGPU'            \
+            -DLLVM_INCLUDE_TESTS=ON                         \
+            -DLLVM_OPTIMIZED_TABLEGEN=ON                    \
+            -DLLVM_ENABLE_ASSERTIONS=${{ matrix.asserts }}
+
+    - name: Build
+      working-directory: build
+      run: |
+        ninja || true
+        ninja || true
+        ninja || true
+        ninja || true
+        ninja
+
+    - name: Install
+      working-directory: build
+      run: |
+        ninja install
+
+    - name: Copy Private Headers
+      run: |
+        mkdir -p install/include/private
+        cp llvm/lib/Target/AMDGPU/*.h install/include/private
+        cp build/lib/Target/AMDGPU/*.inc install/include/private
+
+    - name: Build artifact
+      run: |
+        tar -czf llvm-${{ matrix.llvm }}-${{ matrix.artifact-tag }}-${{ matrix.os }}.tar.gz install
+
+    - name: Dump ccache Statistics
+      run: ccache -s
+
+    - uses: ncipollo/release-action@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag: optsched-artifacts
+        commit: github-workflows
+        name: OptSched Artifacts
+        body: |
+          For pre-built LLVM binaries/libraries/include files, configured for OptSched.
+        artifacts: llvm-${{ matrix.llvm }}-${{ matrix.artifact-tag }}-${{ matrix.os }}.tar.gz
+        allowUpdates: true
+
+
+  build-adapted-llvm:
+    needs: update-release-tag
+
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-18.04]
+        asserts: [OFF, ON]
+        include:
+          - asserts: OFF
+            artifact: adapted-llvm-7.x-release
+            branch: optsched-7.x
+          - asserts: ON
+            artifact: adapted-llvm-7.x-release-asserts
+            branch: optsched-7.x
+          - asserts: OFF
+            artifact: adapted-llvm-6.x-release
+            branch: optsched
+          - asserts: ON
+            artifact: adapted-llvm-6.x-release-asserts
+            branch: optsched
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ matrix.branch }}
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install ninja-build
+        sudo apt-get install ccache
+
+    - name: Set up ccache
+      uses: actions/cache@v2
+      with:
+        path: .ccache
+        key: ccache-${{ matrix.asserts }}-adapted
+
+    - name: Configure
+      run: |
+        mkdir build && cd build
+        cmake ../llvm -GNinja                               \
+            -DCMAKE_BUILD_TYPE=Release                      \
+            -DCMAKE_PARALLEL_LINK_JOBS=1                    \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache            \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache              \
+            -DCMAKE_INSTALL_PREFIX=$(cd ..; pwd)/install    \
+            -DLLVM_ENABLE_PROJECTS='clang'                  \
+            '-DLLVM_TARGETS_TO_BUILD=X86;AMDGPU'            \
+            -DLLVM_INCLUDE_TESTS=ON                         \
+            -DLLVM_OPTIMIZED_TABLEGEN=ON                    \
+            -DLLVM_ENABLE_ASSERTIONS=${{ matrix.asserts }}
+
+    - name: Build
+      working-directory: build
+      run: |
+        ninja || true
+        ninja || true
+        ninja || true
+        ninja || true
+        ninja
+
+    - name: Install
+      working-directory: build
+      run: |
+        ninja install
+
+    - name: Copy Private Headers
+      run: |
+        mkdir -p install/include/private
+        cp llvm/lib/Target/AMDGPU/*.h install/include/private
+        cp build/lib/Target/AMDGPU/*.inc install/include/private
+
+    - name: Build artifact
+      run: |
+        tar -czf ${{ matrix.artifact }}-${{ matrix.os }}.tar.gz install
+
+    - name: Dump ccache Statistics
+      run: ccache -s
+
+    - uses: ncipollo/release-action@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag: optsched-artifacts
+        commit: github-workflows
+        name: OptSched Artifacts
+        body: |
+          For pre-built LLVM binaries/libraries/include files, configured for OptSched.
+        artifacts: ${{ matrix.artifact }}-${{ matrix.os }}.tar.gz
+        allowUpdates: true
